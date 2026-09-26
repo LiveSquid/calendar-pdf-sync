@@ -17,3 +17,78 @@ TODO:
 See the `claude-api` skill / current Anthropic docs for the current model ID
 and the exact tool-use message shape before implementing.
 """
+from pydantic import BaseModel
+from typing import Optional
+import anthropic
+
+class ExtractedEvent(BaseModel):
+    title: str
+    start_date: str
+    date_is_approximate: bool
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    location: Optional[str] = None
+    description: Optional[str] = None
+    source_snippet: Optional[str] = None
+
+class ExtractedEvents(BaseModel):
+    events: list[ExtractedEvent]
+
+SYSTEM_PROMPT = (
+    "You extract calendar events from a PDF course schedule or syllabus. "
+    "You are given two versions of the same PDF: RAW TEXT (reading order, includes the column headers) "
+    "and TABLES (one row per line, cells separated by ' | ', with the headers usually missing). "
+    "Use the raw text to understand what each column means, and use the tables to find every item -- "
+    "every non-empty cell for a lecture, lab, assignment, quiz, or exam should become its own event. "
+    "Dates: only give a specific day when the PDF states it (e.g. 'Oct 08'), or when a column header names "
+    "the weekday (e.g. a 'Tuesday' column in the week of Sep 14-18 means Sep 15). "
+    "If an item only belongs to a week with no day given, set start_date to the first day of that week, "
+    "set date_is_approximate to true, and do not invent a due date. Otherwise set date_is_approximate to false. "
+    "For every event, copy the exact source text you used into source_snippet -- do not shorten it with '...'. "
+    "If the year is not stated but the term is inferable (e.g. 'Fall 2026'), use that year for the dates."
+)
+
+MODEL = "claude-sonnet-5"
+
+class LLMExtractionError(Exception):
+    """Raised when Claude fails to extract evenets from the given text"""
+
+def format_tables(tables: list[list[list[str | None]]]) -> str:
+    formatted_tables = []
+
+    for table_number, table in enumerate(tables, start = 1):
+        lines = [f"Table {table_number}:"]
+        for row in table:
+            cells = [(cell or "").replace("\n", " ") for cell in row]
+            lines.append(" | ".join(cells))
+        formatted_tables.append("\n".join(lines))
+    return "\n\n".join(formatted_tables)
+
+
+def extract_events(raw_text: str, tables: list[list[list[str | None]]]) -> list[dict]:
+    client = anthropic.Anthropic()
+
+    tables_text = format_tables(tables) or "(no tabels found)"
+    user_message = f"RAW TEXT: \n {raw_text} \n\n TABLES: \n {tables_text}"
+
+    try:
+        response = client.messages.parse(
+            model = MODEL,
+            max_tokens = 16000,
+            system = SYSTEM_PROMPT,
+            messages = [{"role": "user", "content": user_message}],
+            output_format = ExtractedEvents,
+            output_config = {"effort": "low"},
+        )
+    except anthropic.APIError as e:
+        raise LLMExtractionError(f"Claude API call failed: {e}") from e
+
+    if response.parsed_output is None:
+        raise LLMExtractionError(
+            f"Claude's response could not be parsed (stop_reason: {response.stop_reason})"
+        )   
+     
+    return [event.model_dump() for event in response.parsed_output.events]
+
+
+     
