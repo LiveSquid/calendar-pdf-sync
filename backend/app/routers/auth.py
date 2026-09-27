@@ -1,4 +1,4 @@
-"""GET /auth/google/login, GET /auth/google/callback, GET /auth/status="""
+"""Google sign-in routes: /auth/google/login, /auth/google/callback, and a temporary /auth/google/test-event."""
 
 from datetime import date, timedelta
 
