@@ -8,3 +8,11 @@ TODO:
 
 Run with: uvicorn app.main:app --reload --port 8000
 """
+
+
+from fastapi import FastAPI
+
+from app.routers import auth
+
+app = FastAPI(title="Calendar PDF Sync")
+app.include_router(auth.router)
