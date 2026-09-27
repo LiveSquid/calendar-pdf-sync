@@ -2,7 +2,6 @@
 
 import json
 from datetime import date, datetime, timedelta
-from pathlib import Path
 
 from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request
@@ -11,10 +10,11 @@ from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from oauthlib.oauth2.rfc6749.errors import OAuth2Error
+from app.config import settings
 
+CLIENT_SECRET_PATH = settings.google_client_secret_path
 SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
 REDIRECT_URI = "http://localhost:8000/auth/google/callback"
-CLIENT_SECRET_PATH = Path(__file__).resolve().parents[2] / "client_secret.json"
 TIMEZONE = "America/Vancouver"
 
 class GoogleCalendarError(Exception):

@@ -20,6 +20,10 @@ and the exact tool-use message shape before implementing.
 from pydantic import BaseModel
 from typing import Optional
 import anthropic
+from app.config import settings
+
+client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+
 
 class ExtractedEvent(BaseModel):
     title: str
