@@ -22,8 +22,6 @@ from typing import Optional
 import anthropic
 from app.config import settings
 
-client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-
 
 class ExtractedEvent(BaseModel):
     title: str
@@ -70,7 +68,7 @@ def format_tables(tables: list[list[list[str | None]]]) -> str:
 
 
 def extract_events(raw_text: str, tables: list[list[list[str | None]]]) -> list[dict]:
-    client = anthropic.Anthropic()
+    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
 
     tables_text = format_tables(tables) or "(no tabels found)"
     user_message = f"RAW TEXT: \n {raw_text} \n\n TABLES: \n {tables_text}"

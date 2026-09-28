@@ -1,22 +1,16 @@
-"""FastAPI app entrypoint.
+"""FastAPI app entry point.
 
-TODO:
-  - Create the FastAPI() app instance.
-  - Configure CORS to allow the Vite dev server origin (http://localhost:5173).
-  - Include the upload, events, and auth routers.
-  - On startup, call Base.metadata.create_all(engine) (or wire up Alembic).
-
-Run with: uvicorn app.main:app --reload --port 8000
+Run from backend/ with: uvicorn app.main:app --reload --port 8000
 """
-
 
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app import models  
+from app import models  # noqa: F401 - importing registers the tables on Base
 from app.db import Base, engine
-from app.routers import auth
+from app.routers import auth, events, upload
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -26,3 +20,5 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Calendar PDF Sync", lifespan=lifespan)
 app.include_router(auth.router)
+app.include_router(upload.router)
+app.include_router(events.router)

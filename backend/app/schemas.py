@@ -1,15 +1,38 @@
-"""Pydantic request/response models for the API.
+"""Pydantic models describing what the API sends and accepts.
 
-TODO: define schemas mirroring models.py, e.g.:
-  - EventOut (id, title, start_date, start_time, end_time, location,
-    description, included, status, source_snippet)
-  - EventUpdate (all fields optional, for PATCH /events/{id})
-  - EventBatchUpdate (list of partial updates, for PUT /events/batch)
-  - SyncRequest (event_ids: list[int])
-  - SyncResult (id, status, google_event_id | error)
-  - UploadOut (id, filename, status, error_message)
-  - AuthStatus (connected: bool, email: str | None)
-
-These double as the source of truth for the frontend's TypeScript types in
-frontend/src/types.ts -- keep them in sync by hand for now.
+These are separate from the SQLAlchemy models on purpose: they list exactly
+which fields leave the server (e.g. never raw_text or Google credentials).
 """
+
+from datetime import date, datetime
+
+from pydantic import BaseModel, ConfigDict
+
+
+class UploadOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    filename: str
+    status: str
+    error_message: str | None
+    created_at: datetime
+
+
+class EventOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    upload_id: int
+    title: str
+    start_date: date
+    date_is_approximate: bool
+    start_time: str | None
+    end_time: str | None
+    location: str | None
+    description: str | None
+    source_snippet: str | None
+    included: bool
+    status: str
+    google_event_id: str | None
+    sync_error: str | None
